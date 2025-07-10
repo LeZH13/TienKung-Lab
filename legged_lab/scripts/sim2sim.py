@@ -198,10 +198,24 @@ class MujocoRunner:
         """
         Run the simulation loop with keyboard-controlled commands.
         """
+        import time
+
         self.setup_keyboard_listener()
         self.listener.start()
 
+        # Track real time
+        real_time_start = time.time()
+        sim_time_start = self.data.time
+
         while self.data.time < self.cfg.sim.sim_duration:
+            # Calculate current times
+            real_time_elapsed = time.time() - real_time_start
+            sim_time_elapsed = self.data.time - sim_time_start
+
+            # If simulation is running faster than real-time, add a delay
+            if sim_time_elapsed > real_time_elapsed:
+                time.sleep(sim_time_elapsed - real_time_elapsed)
+
             self.obs_history = self.get_obs()
             self.action[:] = self.policy(torch.tensor(self.obs_history, dtype=torch.float32)).detach().numpy()[:20]
             self.action = np.clip(self.action, -self.cfg.sim.clip_actions, self.cfg.sim.clip_actions)
